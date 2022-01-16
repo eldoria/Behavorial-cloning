@@ -27,13 +27,13 @@ def return_dateset(name='weak_ppo', nb_steps=10000, render=False):
     y = []
 
     obs = env.reset()
-
     for i in range(nb_steps):
         action, _states = loaded_model.predict(obs, deterministic=True)
         obs, reward, done, info = env.step(action)
         obs = obs.tolist()
         X.append(obs)
-        y.append(float(action))
+        # y.append(float(action))
+        y.append(one_hot_encoding(action))
 
         if render:
             env.render()
@@ -43,6 +43,13 @@ def return_dateset(name='weak_ppo', nb_steps=10000, render=False):
 
     env.close()
     return X, y
+
+
+def one_hot_encoding(action):
+    if action == 0:
+        return [1, 0]
+    else:
+        return [0, 1]
 
 
 if __name__ == '__main__':
