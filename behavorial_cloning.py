@@ -2,68 +2,98 @@ import tensorflow as tf
 from tensorflow.keras import layers, callbacks
 from tensorflow import keras
 
-from sklearn.model_selection import train_test_split
-
 import gym
 
 import numpy as np
 
 from expert import return_dateset
 
+'''
+def OurModel(input_shape=4, action_space=2):
+    X_input = Input(input_shape)
 
-model = tf.keras.Sequential([
-    layers.Dense(4, activation='tanh', input_shape=(4,)),
-    layers.Dense(4, activation='tanh'),
-    layers.Dense(4, activation='tanh'),
-    layers.Dense(2, activation='sigmoid')
-])
+    # 'Dense' is the basic form of a neural network layer
+    # Input Layer of state size(4) and Hidden Layer with 512 nodes
+    X = Dense(512, input_shape=input_shape, activation="relu", kernel_initializer='he_uniform')(X_input)
 
-model.compile(optimizer='adam',
-              # loss=keras.losses.sparse_categorical_crossentropy, metrics=keras.metrics.sparse_categorical_accuracy)
-              loss=keras.losses.categorical_crossentropy, metrics=keras.metrics.categorical_accuracy)
+    # Hidden layer with 256 nodes
+    X = Dense(256, activation="relu", kernel_initializer='he_uniform')(X)
+
+    # Hidden layer with 64 nodes
+    X = Dense(64, activation="relu", kernel_initializer='he_uniform')(X)
+
+    # Output Layer with # of actions: 2 nodes (left, right)
+    X = Dense(action_space, activation="linear", kernel_initializer='he_uniform')(X)
+
+    model = Model(inputs=X_input, outputs=X, name='CartPole DQN model')
+    model.compile(loss="mse", optimizer=RMSprop(lr=0.00025, rho=0.95, epsilon=0.01), metrics=["accuracy"])
+
+    model.summary()
+    return model
+'''
+
+
+def return_model():
+    model = tf.keras.Sequential([
+        layers.Dense(256, activation='relu', input_shape=(4,)),
+        layers.Dense(126, activation='relu'),
+        layers.Dense(64, activation='relu'),
+        layers.Dense(2, activation='softmax')
+    ])
+    model.compile(optimizer='adam', loss=keras.losses.categorical_crossentropy, metrics=keras.metrics.categorical_accuracy)
+
+    return model
 
 
 def train_behavior_model(name, nb_steps):
     X, y = return_dateset(name, nb_steps)
 
-    # print(X)
-    # print(y)
+    model = return_model()
+
+    checkpoint_path = f"model/apprentice/{name.split('_')[0]}/behavior_model"
+
+    # Create a callback that saves the model's weights
+    cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                     fine_tune_checkpoint_type="detection",
+                                                     monitor='categorical_accuracy',
+                                                     save_weights_only=False,
+                                                     save_best_only=True,
+                                                     verbose=1)
 
     model.fit(X, y,
-              epochs=50,
-              batch_size=1,
-              callbacks=[callbacks.EarlyStopping(monitor='loss', patience=10)])
+              epochs=300,
+              batch_size=2048,
+              callbacks=[callbacks.EarlyStopping(monitor='loss', patience=10), cp_callback],)
 
     return model
 
 
+def return_behavior_model(name):
+    return return_model().load_weights(f"model/apprentice/{name.split('_')[0]}/behavior_model")
+
+
 def test_beahvior_model(name, nb_steps=100000):
     model = train_behavior_model(name, nb_steps)
+    # model = return_behavior_model(name)
+
 
     env = gym.make("CartPole-v1")
 
     obs = env.reset()
     scores = []
     score = 0
-    for i in range(1000):
+    for i in range(500):
         action = return_max(model.predict([obs.tolist()]))
-        print(action)
 
         obs, reward, done, info = env.step(action)
 
-        '''
-        print(f'observation: {obs}')
-        print(f'action: {action}')
-        print('\n')
-        '''
-
-        env.render()
+        # env.render()
         score += 1
         if done:
+            print(score)
             scores.append(score)
             score = 0
             obs = env.reset()
-            print()
     env.close()
     print(f'score: {np.mean(scores)}')
 
@@ -74,6 +104,8 @@ def return_max(arr):
 
 
 if __name__ == '__main__':
-    test_beahvior_model('strong_ppo', 1000)
+    test_beahvior_model('weak_ppo')
+    # test_beahvior_model('medium_ppo')
+    # test_beahvior_model('strong_ppo')
 
 
