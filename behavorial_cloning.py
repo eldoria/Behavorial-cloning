@@ -50,31 +50,21 @@ def train_behavior_model(name, nb_steps):
 
     model = return_model()
 
-    checkpoint_path = f"model/apprentice/{name.split('_')[0]}/behavior_model"
-
-    # Create a callback that saves the model's weights
-    cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                                     fine_tune_checkpoint_type="detection",
-                                                     monitor='categorical_accuracy',
-                                                     save_weights_only=False,
-                                                     save_best_only=True,
-                                                     verbose=1)
-
     model.fit(X, y,
               epochs=300,
               batch_size=2048,
-              callbacks=[callbacks.EarlyStopping(monitor='loss', patience=10), cp_callback],)
+              callbacks=[callbacks.EarlyStopping(monitor='loss', patience=10)])
+
+    model.save_weights(f"model/apprentice/{name.split('_')[0]}/behavior_model")
 
     return model
 
 
-def return_behavior_model(name):
-    return return_model().load_weights(f"model/apprentice/{name.split('_')[0]}/behavior_model")
+def test_beahvior_model(name, nb_steps=100000, render=False):
+    # model = train_behavior_model(name, nb_steps)
+    model = return_model()
+    model.load_weights(f"model/apprentice/{name.split('_')[0]}/behavior_model")
 
-
-def test_beahvior_model(name, nb_steps=100000):
-    model = train_behavior_model(name, nb_steps)
-    # model = return_behavior_model(name)
 
 
     env = gym.make("CartPole-v1")
@@ -82,12 +72,13 @@ def test_beahvior_model(name, nb_steps=100000):
     obs = env.reset()
     scores = []
     score = 0
-    for i in range(500):
+    for i in range(10000):
         action = return_max(model.predict([obs.tolist()]))
 
         obs, reward, done, info = env.step(action)
 
-        # env.render()
+        if render:
+            env.render()
         score += 1
         if done:
             print(score)
@@ -104,8 +95,8 @@ def return_max(arr):
 
 
 if __name__ == '__main__':
-    test_beahvior_model('weak_ppo')
-    # test_beahvior_model('medium_ppo')
-    # test_beahvior_model('strong_ppo')
+    # test_beahvior_model('weak_ppo', render=True)
+    # test_beahvior_model('medium_ppo', render=True)
+    test_beahvior_model('strong_ppo', render=True)
 
 
