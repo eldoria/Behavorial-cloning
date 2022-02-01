@@ -2,84 +2,80 @@ import tensorflow as tf
 from tensorflow.keras import layers, callbacks
 from tensorflow import keras
 
+from sklearn.model_selection import train_test_split
+
 import gym
 
 import numpy as np
 
 from expert import return_dateset
 
-'''
-def OurModel(input_shape=4, action_space=2):
-    X_input = Input(input_shape)
 
-    # 'Dense' is the basic form of a neural network layer
-    # Input Layer of state size(4) and Hidden Layer with 512 nodes
-    X = Dense(512, input_shape=input_shape, activation="relu", kernel_initializer='he_uniform')(X_input)
-
-    # Hidden layer with 256 nodes
-    X = Dense(256, activation="relu", kernel_initializer='he_uniform')(X)
-
-    # Hidden layer with 64 nodes
-    X = Dense(64, activation="relu", kernel_initializer='he_uniform')(X)
-
-    # Output Layer with # of actions: 2 nodes (left, right)
-    X = Dense(action_space, activation="linear", kernel_initializer='he_uniform')(X)
-
-    model = Model(inputs=X_input, outputs=X, name='CartPole DQN model')
-    model.compile(loss="mse", optimizer=RMSprop(lr=0.00025, rho=0.95, epsilon=0.01), metrics=["accuracy"])
-
-    model.summary()
-    return model
-'''
-
-
-def return_model():
-    model = tf.keras.Sequential([
-        layers.Dense(256, activation='relu', input_shape=(4,)),
-        layers.Dense(126, activation='relu'),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(2, activation='softmax')
-    ])
-    model.compile(optimizer='adam', loss=keras.losses.categorical_crossentropy, metrics=keras.metrics.categorical_accuracy)
-
+def return_model(env_name):
+    if env_name == 'cartpole-v1':
+        model = tf.keras.Sequential([
+            layers.Dense(256, activation='relu', input_shape=(4,)),
+            layers.Dense(126, activation='relu'),
+            layers.Dense(64, activation='relu'),
+            layers.Dense(2, activation='softmax')
+        ])
+        model.compile(optimizer='adam', loss=keras.losses.categorical_crossentropy, metrics=keras.metrics.categorical_accuracy)
+    else:
+        model = tf.keras.Sequential([
+            layers.Dense(84, activation='relu', input_shape=(24,)),
+            layers.Dense(84, activation='relu'),
+            layers.Dense(84, activation='relu'),
+            layers.Dense(84, activation='relu'),
+            layers.Dense(84, activation='relu'),
+            layers.Dense(84, activation='relu'),
+            layers.Dense(84, activation='relu'),
+            layers.Dense(84, activation='relu'),
+            layers.Dense(84, activation='relu'),
+            layers.Dense(4)
+        ])
+        model.compile(optimizer='adam', loss='mae')
     return model
 
 
-def train_behavior_model(name, nb_steps):
-    X, y = return_dateset(name, nb_steps)
+def train_behavior_model(env_name, algo_name, nb_steps):
+    X, y = return_dateset(env_name, algo_name, nb_steps)
 
-    model = return_model()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-    model.fit(X, y,
-              epochs=300,
-              batch_size=2048,
-              callbacks=[callbacks.EarlyStopping(monitor='loss', patience=10)])
+    model = return_model(env_name)
 
-    model.save_weights(f"model/apprentice/{name.split('_')[0]}/behavior_model")
+    model.fit(X_train, y_train,
+              validation_data=(X_test, y_test),
+              epochs=1000,
+              batch_size=2048)
+              # callbacks=[callbacks.EarlyStopping(monitor='val_loss', patience=70)])
+
+    model.save_weights(f"model/apprentice/{env_name}/{algo_name.split('_')[0]}/behavior_model")
 
     return model
 
 
-def test_beahvior_model(name, nb_steps=100000, render=False):
-    # model = train_behavior_model(name, nb_steps)
-    model = return_model()
-    model.load_weights(f"model/apprentice/{name.split('_')[0]}/behavior_model")
+def test_beahvior_model(env_name, algo_name, nb_steps=10000, render=False):
+    model = return_model(env_name)
+    model.load_weights(f"model/apprentice/{env_name}/{algo_name.split('_')[0]}/behavior_model")
 
-
-
-    env = gym.make("CartPole-v1")
+    env = gym.make(env_name)
 
     obs = env.reset()
     scores = []
     score = 0
-    for i in range(10000):
-        action = return_max(model.predict([obs.tolist()]))
+    for i in range(nb_steps):
+
+        if env_name == 'Cartpole-v1':
+            action = return_max(model.predict([obs.tolist()]))
+        else:
+            action = model.predict([obs.tolist()])[0]
 
         obs, reward, done, info = env.step(action)
 
         if render:
             env.render()
-        score += 1
+        score += reward
         if done:
             print(score)
             scores.append(score)
@@ -95,8 +91,12 @@ def return_max(arr):
 
 
 if __name__ == '__main__':
-    # test_beahvior_model('weak_ppo', render=True)
-    # test_beahvior_model('medium_ppo', render=True)
-    test_beahvior_model('strong_ppo', render=True)
+    env_name = 'BipedalWalker-v3'
+    # train_behavior_model(env_name, 'weak_ppo', 100000)
+    # train_behavior_model(env_name, 'medium_ppo', 100000)
+    # train_behavior_model(env_name, 'strong_ppo', 100000)
+    # test_beahvior_model(env_name, 'weak_ppo', render=True)
+    test_beahvior_model(env_name, 'medium_ppo', render=True)
+    # test_beahvior_model(env_name, 'strong_ppo', render=True)
 
 
