@@ -32,7 +32,7 @@ def return_dateset(env_name, algo_name='weak_ppo', nb_steps=10000, render=False)
         action = action.tolist()
 
         # y.append(float(action))
-        if env_name == 'cartple-v1':
+        if env_name == 'CartPole-v1':
             y.append(one_hot_encoding(action))
         else:
             y.append(action)
