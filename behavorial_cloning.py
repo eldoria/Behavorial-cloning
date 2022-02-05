@@ -62,7 +62,7 @@ def train_behavior_model(env_name, algo_name, nb_steps):
     return model
 
 
-def test_beahvior_model(env_name, algo_name, nb_steps=10000, render=False):
+def test_behavior_model(env_name, algo_name, nb_steps=10000, render=False):
     model = return_model(env_name)
     model.load_weights(f"model/apprentice/{env_name}/{algo_name.split('_')[0]}/behavior_model")
 
@@ -102,8 +102,8 @@ if __name__ == '__main__':
     # train_behavior_model(env_name, 'weak_ppo', 100000)
     # train_behavior_model(env_name, 'medium_ppo', 100000)
     train_behavior_model(env_name, 'strong_ppo', 100000)
-    # test_beahvior_model(env_name, 'weak_ppo', render=True)
-    # test_beahvior_model(env_name, 'medium_ppo', render=True)
-    test_beahvior_model(env_name, 'strong_ppo', render=True)
+    # test_behavior_model(env_name, 'weak_ppo', render=True)
+    # test_behavior_model(env_name, 'medium_ppo', render=True)
+    test_behavior_model(env_name, 'strong_ppo', render=True)
 
 
