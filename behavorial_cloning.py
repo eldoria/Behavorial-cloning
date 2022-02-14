@@ -22,15 +22,13 @@ def return_model(env_name):
         model.compile(optimizer='adam', loss=keras.losses.categorical_crossentropy, metrics=keras.metrics.categorical_accuracy)
     else:
         model = tf.keras.Sequential([
-            layers.Dense(84, activation='relu', input_shape=(24,)),
-            layers.Dense(84, activation='relu'),
-            layers.Dense(84, activation='relu'),
-            layers.Dense(84, activation='relu'),
-            layers.Dense(84, activation='relu'),
-            layers.Dense(84, activation='relu'),
-            layers.Dense(84, activation='relu'),
-            layers.Dense(84, activation='relu'),
-            layers.Dense(84, activation='relu'),
+            layers.Dense(48, activation='relu', input_shape=(24,)),
+            layers.Dense(48, activation='relu'),
+            layers.Dense(48, activation='relu'),
+            layers.Dense(48, activation='relu'),
+            layers.Dense(48, activation='relu'),
+            layers.Dense(48, activation='relu'),
+            layers.Dense(48, activation='relu'),
             layers.Dense(4)
         ])
         model.compile(optimizer='adam', loss='mae')
@@ -62,7 +60,7 @@ def train_behavior_model(env_name, algo_name, nb_steps):
     return model
 
 
-def test_behavior_model(env_name, algo_name, nb_steps=10000, render=False):
+def test_behavior_model(env_name, algo_name, nb_steps=1000000, render=False):
     model = return_model(env_name)
     model.load_weights(f"model/apprentice/{env_name}/{algo_name.split('_')[0]}/behavior_model")
 
@@ -98,10 +96,10 @@ def return_max(arr):
 
 
 if __name__ == '__main__':
-    env_name = 'CartPole-v1'
+    env_name = 'BipedalWalker-v3'
     # train_behavior_model(env_name, 'weak_ppo', 100000)
     # train_behavior_model(env_name, 'medium_ppo', 100000)
-    train_behavior_model(env_name, 'strong_ppo', 100000)
+    # train_behavior_model(env_name, 'strong_ppo', 100000)
     # test_behavior_model(env_name, 'weak_ppo', render=True)
     # test_behavior_model(env_name, 'medium_ppo', render=True)
     test_behavior_model(env_name, 'strong_ppo', render=True)
